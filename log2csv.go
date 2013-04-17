@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const LOG_PATTERN = `gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+,\s(\d+)\s->\s(\d+)\s\w+\s+(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects,\s(\d+)\((\d+)\)\shandoff,\s(\d+)\((\d+)\)\ssteal,\s(\d+)\/(\d+)\/(\d+)\syields`
@@ -16,7 +18,9 @@ var (
 	logRegex   = regexp.MustCompile(LOG_PATTERN)
 	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
 	outputFile = flag.String("o", "", "The output file (default: Stdout)")
+	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
 	help       = flag.Bool("h", false, "Show Usage")
+	isStdin    = false
 )
 
 func convert(input string) (output string, err error) {
@@ -39,17 +43,32 @@ func run(in, out *os.File) {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
-	writer.WriteString("numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
+	prefix := ""
+	if *timestamp {
+		prefix = "starttime,"
+	}
+
+	writer.WriteString(prefix + "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
 	for {
 		if line, err := reader.ReadString('\n'); err != nil {
 			break
 		} else {
 			if output, err := convert(line); err == nil {
-				writer.WriteString(output + "\n")
-				writer.Flush()
+				prefix := ""
+
+				if *timestamp {
+					prefix = strconv.FormatInt(time.Now().Unix(), 10) + ","
+				}
+
+				writer.WriteString(prefix + output + "\n")
+				if isStdin {
+					writer.Flush()
+				}
 			}
 		}
+
 	}
+	writer.Flush()
 
 }
 
@@ -58,7 +77,7 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
-		fmt.Println("Usage2: GCTRACE=1 your-go-program | log2csv -o gc.csv")
+		fmt.Println("Usage2: GCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
 		flag.PrintDefaults()
 	}
 
@@ -79,6 +98,7 @@ func main() {
 		defer in.Close()
 	} else {
 		in = os.Stdin
+		isStdin = true
 	}
 
 	if *outputFile != "" {
