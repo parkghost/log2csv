@@ -39,19 +39,18 @@ func run(in, out *os.File) {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
-	writer.WriteString("numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep")
+	writer.WriteString("numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
 	for {
 		if line, err := reader.ReadString('\n'); err != nil {
+			fmt.Println(err)
 			break
 		} else {
-			if output, err := convert(line); err != nil {
-				break
-			} else {
+			if output, err := convert(line); err == nil {
 				writer.WriteString(output + "\n")
+				writer.Flush()
 			}
 		}
 	}
-	writer.Flush()
 
 }
 
