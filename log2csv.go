@@ -42,7 +42,6 @@ func run(in, out *os.File) {
 	writer.WriteString("numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
 	for {
 		if line, err := reader.ReadString('\n'); err != nil {
-			fmt.Println(err)
 			break
 		} else {
 			if output, err := convert(line); err == nil {
