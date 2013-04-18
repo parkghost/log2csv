@@ -21,6 +21,7 @@ var (
 	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
 	help       = flag.Bool("h", false, "Show Usage")
 	isStdin    = false
+	isStdout   = false
 )
 
 func convert(input string) (output string, err error) {
@@ -44,8 +45,8 @@ func run(in, out *os.File) {
 	writer := bufio.NewWriter(out)
 
 	prefix := ""
-	if *timestamp {
-		prefix = "starttime,"
+	if *timestamp && isStdin {
+		prefix = "unixtime,"
 	}
 
 	writer.WriteString(prefix + "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
@@ -56,12 +57,12 @@ func run(in, out *os.File) {
 			if output, err := convert(line); err == nil {
 				prefix := ""
 
-				if *timestamp {
+				if *timestamp && isStdin {
 					prefix = strconv.FormatInt(time.Now().Unix(), 10) + ","
 				}
 
 				writer.WriteString(prefix + output + "\n")
-				if isStdin {
+				if isStdout {
 					writer.Flush()
 				}
 			}
@@ -111,6 +112,7 @@ func main() {
 		defer out.Close()
 	} else {
 		out = os.Stdout
+		isStdout = true
 	}
 
 	run(in, out)
