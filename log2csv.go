@@ -40,7 +40,6 @@ func convert(input string) (output string, err error) {
 }
 
 func run(in, out *os.File) {
-
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
@@ -58,7 +57,7 @@ func run(in, out *os.File) {
 				prefix := ""
 
 				if *timestamp && isStdin {
-					prefix = strconv.FormatInt(time.Now().Unix(), 10) + ","
+					prefix = fmtFrac(time.Now(), 6) + ","
 				}
 
 				writer.WriteString(prefix + output + "\n")
@@ -70,7 +69,12 @@ func run(in, out *os.File) {
 
 	}
 	writer.Flush()
+}
 
+func fmtFrac(t time.Time, prec int) string {
+	unixNano := t.UnixNano()
+	fmtStr := "%." + strconv.Itoa(prec) + "f"
+	return fmt.Sprintf(fmtStr, float64(unixNano)/10e8)
 }
 
 func main() {

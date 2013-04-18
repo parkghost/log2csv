@@ -2,10 +2,17 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 type TestData struct {
 	text     string
+	expected string
+}
+
+type TestTimeData struct {
+	time     time.Time
+	prec     int
 	expected string
 }
 
@@ -23,4 +30,25 @@ func TestConvert(t *testing.T) {
 		}
 	}
 
+}
+
+func TestFmtFrac(t *testing.T) {
+	testTimeDatas := []*TestTimeData{
+		&TestTimeData{
+			time.Unix(1366274236, 919928546),
+			6,
+			"1366274236.919929",
+		},
+		&TestTimeData{
+			time.Unix(1366274236, 919928546),
+			3,
+			"1366274236.920",
+		},
+	}
+
+	for _, data := range testTimeDatas {
+		if output := fmtFrac(data.time, data.prec); output != data.expected {
+			t.Fatalf("expected %s, get %s", data.expected, output)
+		}
+	}
 }
