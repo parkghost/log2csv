@@ -78,7 +78,7 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
-		fmt.Println("Usage2: GCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
+		fmt.Println("Usage2: GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
 		flag.PrintDefaults()
 	}
 
