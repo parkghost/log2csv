@@ -66,11 +66,6 @@ func run(in, out *os.File) {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
-	prefix := ""
-	if *timestamp && isStdin {
-		prefix = "unixtime,"
-	}
-
 	hasWritten := false
 	for {
 
@@ -80,7 +75,7 @@ func run(in, out *os.File) {
 			if !hasWritten {
 				if version := detectLogVersion(line); version != -1 {
 					currentLogVersion = version
-					writer.WriteString(prefix + header[currentLogVersion] + "\n")
+					writeHeader(writer, currentLogVersion)
 					hasWritten = true
 				} else {
 					continue
@@ -89,22 +84,33 @@ func run(in, out *os.File) {
 
 			if currentLogVersion != -1 {
 				if output, err := convert(line, currentLogVersion); err == nil {
-
-					prefix := ""
-					if *timestamp && isStdin {
-						prefix = fmtFrac(time.Now(), 6) + ","
-					}
-
-					writer.WriteString(prefix + output + "\n")
-					if isStdout {
-						writer.Flush()
-					}
+					writeBody(writer, output)
 				}
 			}
 		}
 
 	}
 	writer.Flush()
+}
+
+func writeHeader(writer *bufio.Writer, version int) {
+	prefix := ""
+	if *timestamp && isStdin {
+		prefix = "unixtime,"
+	}
+	writer.WriteString(prefix + header[version] + "\n")
+}
+
+func writeBody(writer *bufio.Writer, output string) {
+	prefix := ""
+	if *timestamp && isStdin {
+		prefix = fmtFrac(time.Now(), 6) + ","
+	}
+
+	writer.WriteString(prefix + output + "\n")
+	if isStdout {
+		writer.Flush()
+	}
 }
 
 func fmtFrac(t time.Time, prec int) string {
