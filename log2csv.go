@@ -28,13 +28,12 @@ var (
 		GO_1_1: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
 	}
 
-	currentLogVersion = -1
-	inputFile         = flag.String("i", "", "The input file (default: Stdin)")
-	outputFile        = flag.String("o", "", "The output file (default: Stdout)")
-	timestamp         = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
-	help              = flag.Bool("h", false, "Show Usage")
-	isStdin           = false
-	isStdout          = false
+	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
+	outputFile = flag.String("o", "", "The output file (default: Stdout)")
+	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
+	help       = flag.Bool("h", false, "Show Usage")
+	isStdin    = false
+	isStdout   = false
 )
 
 func detectLogVersion(line string) int {
@@ -66,26 +65,23 @@ func run(in, out *os.File) {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
-	hasWritten := false
+	currentLogVersion := -1
 	for {
 
 		if line, err := reader.ReadString('\n'); err != nil {
 			break
 		} else {
-			if !hasWritten {
+			if currentLogVersion == -1 {
 				if version := detectLogVersion(line); version != -1 {
 					currentLogVersion = version
 					writeHeader(writer, currentLogVersion)
-					hasWritten = true
 				} else {
 					continue
 				}
 			}
 
-			if currentLogVersion != -1 {
-				if output, err := convert(line, currentLogVersion); err == nil {
-					writeBody(writer, output)
-				}
+			if output, err := convert(line, currentLogVersion); err == nil {
+				writeBody(writer, output)
 			}
 		}
 
