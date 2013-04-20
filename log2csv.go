@@ -29,11 +29,10 @@ var (
 	}
 
 	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
-	outputFile = flag.String("o", "", "The output file (default: Stdout)")
+	outputFile = flag.String("o", "", "The output file")
 	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
 	help       = flag.Bool("h", false, "Show Usage")
 	isStdin    = false
-	isStdout   = false
 )
 
 func detectLogVersion(line string) int {
@@ -68,6 +67,7 @@ func run(in, out *os.File) {
 	currentLogVersion := -1
 	for {
 
+		filtered := false
 		if line, err := reader.ReadString('\n'); err != nil {
 			break
 		} else {
@@ -75,13 +75,18 @@ func run(in, out *os.File) {
 				if version := detectLogVersion(line); version != -1 {
 					currentLogVersion = version
 					writeHeader(writer, currentLogVersion)
-				} else {
-					continue
 				}
 			}
 
-			if output, err := convert(line, currentLogVersion); err == nil {
-				writeBody(writer, output)
+			if currentLogVersion != -1 {
+				if output, err := convert(line, currentLogVersion); err == nil {
+					writeBody(writer, output)
+					filtered = true
+				}
+			}
+
+			if isStdin && filtered == false {
+				fmt.Print(line)
 			}
 		}
 
@@ -91,7 +96,7 @@ func run(in, out *os.File) {
 
 func writeHeader(writer *bufio.Writer, version int) {
 	prefix := ""
-	if *timestamp && isStdin {
+	if isStdin && *timestamp {
 		prefix = "unixtime,"
 	}
 	writer.WriteString(prefix + header[version] + "\n")
@@ -99,14 +104,11 @@ func writeHeader(writer *bufio.Writer, version int) {
 
 func writeBody(writer *bufio.Writer, output string) {
 	prefix := ""
-	if *timestamp && isStdin {
+	if isStdin && *timestamp {
 		prefix = fmtFrac(time.Now(), 6) + ","
 	}
 
 	writer.WriteString(prefix + output + "\n")
-	if isStdout {
-		writer.Flush()
-	}
 }
 
 func fmtFrac(t time.Time, prec int) string {
@@ -153,8 +155,9 @@ func main() {
 		}
 		defer out.Close()
 	} else {
-		out = os.Stdout
-		isStdout = true
+		fmt.Fprint(os.Stderr, "require output file\n")
+		flag.Usage()
+		os.Exit(-1)
 	}
 
 	run(in, out)
