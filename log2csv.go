@@ -16,7 +16,6 @@ const (
 	GO_1_0 = iota
 	GO_1_1
 )
-const ()
 
 var (
 	regexes = map[int]*regexp.Regexp{
