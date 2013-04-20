@@ -155,7 +155,7 @@ func main() {
 		}
 		defer out.Close()
 	} else {
-		fmt.Fprint(os.Stderr, "require output file\n")
+		fmt.Fprint(os.Stderr, "required output file parameter\n")
 		flag.Usage()
 		os.Exit(-1)
 	}
