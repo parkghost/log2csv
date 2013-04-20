@@ -12,26 +12,49 @@ import (
 	"time"
 )
 
-const LOG_PATTERN = `gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+,\s(\d+)\s->\s(\d+)\s\w+\s+(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects,\s(\d+)\((\d+)\)\shandoff,\s(\d+)\((\d+)\)\ssteal,\s(\d+)\/(\d+)\/(\d+)\syields`
+const (
+	GO_1_0 = iota
+	GO_1_1
+)
+const ()
 
 var (
-	logRegex   = regexp.MustCompile(LOG_PATTERN)
-	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
-	outputFile = flag.String("o", "", "The output file (default: Stdout)")
-	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
-	help       = flag.Bool("h", false, "Show Usage")
-	isStdin    = false
-	isStdout   = false
+	regexes = map[int]*regexp.Regexp{
+		GO_1_0: regexp.MustCompile(`gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects\s(\d+)\shandoff`),
+		GO_1_1: regexp.MustCompile(`gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+,\s(\d+)\s->\s(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects,\s(\d+)\((\d+)\)\shandoff,\s(\d+)\((\d+)\)\ssteal,\s(\d+)\/(\d+)\/(\d+)\syields`),
+	}
+	header = map[int]string{
+		GO_1_0: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff",
+		GO_1_1: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
+	}
+
+	currentLogVersion = -1
+	inputFile         = flag.String("i", "", "The input file (default: Stdin)")
+	outputFile        = flag.String("o", "", "The output file (default: Stdout)")
+	timestamp         = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
+	help              = flag.Bool("h", false, "Show Usage")
+	isStdin           = false
+	isStdout          = false
 )
 
-func convert(input string) (output string, err error) {
+func detectLogVersion(line string) int {
+	for version, regexp := range regexes {
+		if regexp.MatchString(line) {
+			return version
+		}
+	}
+
+	return -1
+}
+
+func convert(input string, version int) (output string, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New(fmt.Sprintf("unmatched uint string: %s => %s", input, e))
 		}
 	}()
 
-	if matched := logRegex.FindStringSubmatch(input); matched == nil {
+	if matched := regexes[version].FindStringSubmatch(input); matched == nil {
 		err = errors.New(fmt.Sprintf("unmatched string: %s", input))
 	} else {
 		output = strings.Join(matched[1:], ",")
@@ -48,21 +71,34 @@ func run(in, out *os.File) {
 		prefix = "unixtime,"
 	}
 
-	writer.WriteString(prefix + "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep\n")
+	hasWritten := false
 	for {
+
 		if line, err := reader.ReadString('\n'); err != nil {
 			break
 		} else {
-			if output, err := convert(line); err == nil {
-				prefix := ""
-
-				if *timestamp && isStdin {
-					prefix = fmtFrac(time.Now(), 6) + ","
+			if !hasWritten {
+				if version := detectLogVersion(line); version != -1 {
+					currentLogVersion = version
+					writer.WriteString(prefix + header[currentLogVersion] + "\n")
+					hasWritten = true
+				} else {
+					continue
 				}
+			}
 
-				writer.WriteString(prefix + output + "\n")
-				if isStdout {
-					writer.Flush()
+			if currentLogVersion != -1 {
+				if output, err := convert(line, currentLogVersion); err == nil {
+
+					prefix := ""
+					if *timestamp && isStdin {
+						prefix = fmtFrac(time.Now(), 6) + ","
+					}
+
+					writer.WriteString(prefix + output + "\n")
+					if isStdout {
+						writer.Flush()
+					}
 				}
 			}
 		}
