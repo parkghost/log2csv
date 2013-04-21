@@ -30,7 +30,6 @@ var (
 	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
 	outputFile = flag.String("o", "", "The output file")
 	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
-	help       = flag.Bool("h", false, "Show Usage")
 	isStdin    = false
 )
 
@@ -117,18 +116,14 @@ func fmtFrac(t time.Time, prec int) string {
 }
 
 func main() {
-	flag.Parse()
-
 	flag.Usage = func() {
 		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
 		fmt.Println("Usage2: GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
 		flag.PrintDefaults()
+		fmt.Println("  -h   : show help usage")
 	}
 
-	if *help {
-		flag.Usage()
-		os.Exit(0)
-	}
+	flag.Parse()
 
 	var in, out *os.File
 
