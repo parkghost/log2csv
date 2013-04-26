@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
@@ -26,9 +29,9 @@ var testDatas = []*TestData{
 
 func TestDetectLogVersion(t *testing.T) {
 	for _, data := range testDatas {
-		version := detectLogVersion(data.text)
-		if version != data.version {
-			t.Fatalf("expected %d, get %d :%s", data.version, version, data.text)
+		version, err := detectLogVersion(data.text)
+		if err != nil || version != data.version {
+			t.Fatalf("expected %d, got %d :%s", data.version, version, data.text)
 		}
 	}
 }
@@ -39,7 +42,7 @@ func TestConvert(t *testing.T) {
 			t.Fatal(err)
 		} else {
 			if output != data.expected {
-				t.Fatalf("expected %s, get %s", data.expected, output)
+				t.Fatalf("expected %s, got %s", data.expected, output)
 			}
 		}
 	}
@@ -67,7 +70,40 @@ func TestFmtFrac(t *testing.T) {
 
 	for _, data := range testTimeDatas {
 		if output := fmtFrac(data.time, data.prec); output != data.expected {
-			t.Fatalf("expected %s, get %s", data.expected, output)
+			t.Fatalf("expected %s, got %s", data.expected, output)
 		}
+	}
+}
+
+func TestConvertGcLog(t *testing.T) {
+
+	testGcLogs := []string{
+		"testdata/testdata_go_1_0_3",
+		"testdata/testdata_go_1_1",
+	}
+
+	for _, item := range testGcLogs {
+		in, err := os.Open(item + ".log")
+		if err != nil {
+			t.Fatalf("cannot open %s.log", item)
+		}
+
+		out := &bytes.Buffer{}
+
+		run(in, out)
+
+		csvData, err := ioutil.ReadFile(item + ".csv")
+
+		if err != nil {
+			t.Fatalf("cannot read %s.csv", item)
+		}
+
+		actual := string(out.Bytes())
+		expected := string(csvData)
+
+		if expected != actual {
+			t.Fatalf("expected\n %s, got\n %s", expected, actual)
+		}
+
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -27,20 +28,23 @@ var (
 		GO_1_1: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
 	}
 
+	versionNotFound = errors.New("can't detected version")
+
 	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
 	outputFile = flag.String("o", "", "The output file")
 	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
 	isStdin    = false
 )
 
-func detectLogVersion(line string) int {
+func detectLogVersion(line string) (version int, err error) {
 	for version, regexp := range regexes {
 		if regexp.MatchString(line) {
-			return version
+			return version, nil
 		}
 	}
 
-	return -1
+	err = versionNotFound
+	return
 }
 
 func convert(input string, version int) (output string, err error) {
@@ -58,7 +62,7 @@ func convert(input string, version int) (output string, err error) {
 	return
 }
 
-func run(in, out *os.File) {
+func run(in io.Reader, out io.Writer) {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
 
@@ -70,7 +74,7 @@ func run(in, out *os.File) {
 			break
 		} else {
 			if currentLogVersion == -1 {
-				if version := detectLogVersion(line); version != -1 {
+				if version, err := detectLogVersion(line); err == nil {
 					currentLogVersion = version
 					writeHeader(writer, currentLogVersion)
 				}
