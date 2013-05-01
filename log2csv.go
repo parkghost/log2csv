@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	GO_1_0 = iota
+	Unknown = iota
+	GO_1_0
 	GO_1_1
 )
 
@@ -28,13 +29,25 @@ var (
 		GO_1_1: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
 	}
 
-	versionNotFound = errors.New("can't detected version")
+	errVersionNotFound = errors.New("can't detected version")
 
-	inputFile  = flag.String("i", "", "The input file (default: Stdin)")
-	outputFile = flag.String("o", "", "The output file")
-	timestamp  = flag.Bool("t", false, "Add timestamp at line head(Stdin input only)")
-	isStdin    = false
+	inputFile, outputFile string
+	timestamp             bool
+	isStdin               = false
 )
+
+func init() {
+	flag.StringVar(&inputFile, "i", "", "The input file (default: Stdin)")
+	flag.StringVar(&outputFile, "o", "", "The output file")
+	flag.BoolVar(&timestamp, "t", false, "Add timestamp at line head(Stdin input only)")
+
+	flag.Usage = func() {
+		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
+		fmt.Println("Usage2: GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
+		flag.PrintDefaults()
+		fmt.Println("  -h   : show help usage")
+	}
+}
 
 func detectLogVersion(line string) (version int, err error) {
 	for version, regexp := range regexes {
@@ -43,7 +56,7 @@ func detectLogVersion(line string) (version int, err error) {
 		}
 	}
 
-	err = versionNotFound
+	err = errVersionNotFound
 	return
 }
 
@@ -62,27 +75,28 @@ func convert(input string, version int) (output string, err error) {
 	return
 }
 
-func run(in io.Reader, out io.Writer) {
-	reader := bufio.NewReader(in)
-	writer := bufio.NewWriter(out)
+func process(reader io.Reader, writer io.Writer) {
+	bufReader := bufio.NewReader(reader)
+	bufWriter := bufio.NewWriter(writer)
 
-	currentLogVersion := -1
+	currentLogVersion := Unknown
 	for {
 
 		filtered := false
-		if line, err := reader.ReadString('\n'); err != nil {
+		if line, err := bufReader.ReadString('\n'); err != nil {
 			break
 		} else {
-			if currentLogVersion == -1 {
+			if currentLogVersion == Unknown {
 				if version, err := detectLogVersion(line); err == nil {
 					currentLogVersion = version
-					writeHeader(writer, currentLogVersion)
+					writeHeader(bufWriter, currentLogVersion)
 				}
+
 			}
 
-			if currentLogVersion != -1 {
+			if currentLogVersion != Unknown {
 				if output, err := convert(line, currentLogVersion); err == nil {
-					writeBody(writer, output)
+					writeBody(bufWriter, output)
 					filtered = true
 				}
 			}
@@ -93,12 +107,12 @@ func run(in io.Reader, out io.Writer) {
 		}
 
 	}
-	writer.Flush()
+	bufWriter.Flush()
 }
 
 func writeHeader(writer *bufio.Writer, version int) {
 	prefix := ""
-	if isStdin && *timestamp {
+	if isStdin && timestamp {
 		prefix = "unixtime,"
 	}
 	writer.WriteString(prefix + header[version] + "\n")
@@ -106,7 +120,7 @@ func writeHeader(writer *bufio.Writer, version int) {
 
 func writeBody(writer *bufio.Writer, output string) {
 	prefix := ""
-	if isStdin && *timestamp {
+	if isStdin && timestamp {
 		prefix = fmtFrac(time.Now(), 6) + ","
 	}
 
@@ -119,44 +133,43 @@ func fmtFrac(t time.Time, prec int) string {
 	return fmt.Sprintf(fmtStr, float64(unixNano)/10e8)
 }
 
-func main() {
-	flag.Usage = func() {
-		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
-		fmt.Println("Usage2: GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
-		flag.PrintDefaults()
-		fmt.Println("  -h   : show help usage")
-	}
-
-	flag.Parse()
-
-	var in, out *os.File
-
-	if *inputFile != "" {
-		var err error
-		in, err = os.Open(*inputFile)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "cannot open input file: %s", err)
-			os.Exit(1)
-		}
-		defer in.Close()
-	} else {
-		in = os.Stdin
+func getReader(file string) (reader io.Reader, err error) {
+	if file == "" {
+		reader = os.Stdin
 		isStdin = true
-	}
-
-	if *outputFile != "" {
-		var err error
-		out, err = os.OpenFile(*outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "cannot create output file: %s", err)
-			os.Exit(1)
-		}
-		defer out.Close()
 	} else {
-		fmt.Fprint(os.Stderr, "required output file parameter\n")
+		reader, err = os.Open(file)
+	}
+	return
+}
+
+func getWriter(file string) (writer io.Writer, err error) {
+	if file == "" {
+		err = errors.New("required output file parameter")
+	} else {
+		writer, err = os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	}
+	return
+}
+
+func checkError(err error) {
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
 		flag.Usage()
 		os.Exit(-1)
 	}
+}
 
-	run(in, out)
+func main() {
+	flag.Parse()
+
+	reader, err := getReader(inputFile)
+	checkError(err)
+	defer reader.(*os.File).Close()
+
+	writer, err := getWriter(outputFile)
+	checkError(err)
+	defer writer.(*os.File).Close()
+
+	process(reader, writer)
 }

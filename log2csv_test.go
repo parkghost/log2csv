@@ -90,7 +90,7 @@ func TestConvertGcLog(t *testing.T) {
 
 		out := &bytes.Buffer{}
 
-		run(in, out)
+		process(in, out)
 
 		csvData, err := ioutil.ReadFile(item + ".csv")
 
@@ -105,5 +105,34 @@ func TestConvertGcLog(t *testing.T) {
 			t.Fatalf("expected\n %s, got\n %s", expected, actual)
 		}
 
+	}
+}
+
+func TestGetReader(t *testing.T) {
+
+	reader1, _ := getReader("testdata/testdata_go_1_0_3.log")
+	if _, ok := reader1.(*os.File); !ok {
+		t.Fatalf("expected get os.File, got %#+v", reader1)
+	}
+
+	if isStdin {
+		t.Fatalf("expected isStdin was false, got true")
+	}
+	defer reader1.(*os.File).Close()
+
+	reader2, _ := getReader("")
+	if reader2 != os.Stdin {
+		t.Fatalf("expected get os.Stdin, got %#+v", reader2)
+	}
+	if !isStdin {
+		t.Fatalf("expected isStdin was true, got false")
+	}
+
+}
+
+func TestGetWriter(t *testing.T) {
+	_, err := getWriter("")
+	if err == nil {
+		t.Fatal("expected err, got nil")
 	}
 }
