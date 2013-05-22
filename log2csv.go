@@ -89,14 +89,16 @@ func process(reader io.Reader, writer io.Writer) {
 			if currentLogVersion == Unknown {
 				if version, err := detectLogVersion(line); err == nil {
 					currentLogVersion = version
-					writeHeader(bufWriter, currentLogVersion)
+					err := writeHeader(bufWriter, currentLogVersion)
+					checkError(err)
 				}
 
 			}
 
 			if currentLogVersion != Unknown {
 				if output, err := convert(line, currentLogVersion); err == nil {
-					writeBody(bufWriter, output)
+					err := writeBody(bufWriter, output)
+					checkError(err)
 					filtered = true
 				}
 			}
@@ -107,24 +109,27 @@ func process(reader io.Reader, writer io.Writer) {
 		}
 
 	}
-	bufWriter.Flush()
+	err := bufWriter.Flush()
+	checkError(err)
 }
 
-func writeHeader(writer *bufio.Writer, version int) {
+func writeHeader(writer *bufio.Writer, version int) (err error) {
 	prefix := ""
 	if isStdin && timestamp {
 		prefix = "unixtime,"
 	}
-	writer.WriteString(prefix + header[version] + "\n")
+	_, err = writer.WriteString(prefix + header[version] + "\n")
+	return
 }
 
-func writeBody(writer *bufio.Writer, output string) {
+func writeBody(writer *bufio.Writer, output string) (err error) {
 	prefix := ""
 	if isStdin && timestamp {
 		prefix = fmtFrac(time.Now(), 6) + ","
 	}
 
-	writer.WriteString(prefix + output + "\n")
+	_, err = writer.WriteString(prefix + output + "\n")
+	return
 }
 
 func fmtFrac(t time.Time, prec int) string {
@@ -155,7 +160,6 @@ func getWriter(file string) (writer io.Writer, err error) {
 func checkError(err error) {
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
-		flag.Usage()
 		os.Exit(-1)
 	}
 }
