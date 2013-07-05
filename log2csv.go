@@ -167,6 +167,11 @@ func checkError(err error) {
 func main() {
 	flag.Parse()
 
+	if flag.NArg() == 0 || flag.NFlag() == 0 {
+		flag.Usage()
+		os.Exit(-1)
+	}
+
 	reader, err := getReader(inputFile)
 	checkError(err)
 	defer reader.(*os.File).Close()
