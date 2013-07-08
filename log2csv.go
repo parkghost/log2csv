@@ -167,7 +167,7 @@ func checkError(err error) {
 func main() {
 	flag.Parse()
 
-	if flag.NArg() == 0 || flag.NFlag() == 0 {
+	if flag.NArg() != 0 || flag.NFlag() == 0 {
 		flag.Usage()
 		os.Exit(-1)
 	}
