@@ -9,11 +9,12 @@ log2csv
 
 ```
 Usage1: log2csv -i gc.log -o gc.csv
-Usage2: GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv
-  -h=false: Show Usage
+Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv
+       (go version below 1.1) GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv
   -i="": The input file (default: Stdin)
   -o="": The output file
   -t=false: Add timestamp at line head(Stdin input only)
+  -h   : show help usage
 ```
 
 #### Output
