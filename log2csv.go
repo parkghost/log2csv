@@ -44,7 +44,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
 		fmt.Println("Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv\n" +
-			"       (GO version below 1.1) GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
+			"       (GO version below 1.2) GOGCTRACE=1 your-go-program 2>&1 | log2csv -o gc.csv")
 		flag.PrintDefaults()
 		fmt.Println("  -h   : show help usage")
 	}
