@@ -16,14 +16,19 @@ type TestData struct {
 
 var testDatas = []*TestData{
 	&TestData{
-		"gc13(2): 48+24+2 ms, 263 -> 124 MB 1891444 -> 938285 (6426929-5488644) objects, 1(8) handoff, 3(11016) steal, 21/2/0 yields",
-		"13,2,48,24,2,263,124,1891444,938285,6426929,5488644,1,8,3,11016,21,2,0",
-		GO_1_1,
-	},
-	&TestData{
 		"gc14(2): 1+1+0 ms 10 -> 5 MB 58439 -> 8912 (573381-564469) objects 184 handoff",
 		"14,2,1,1,0,10,5,58439,8912,573381,564469,184",
 		GO_1_0,
+	},
+	&TestData{ // 1.1
+		"gc13(2): 48+24+2 ms, 263 -> 124 MB 1891444 -> 938285 (6426929-5488644) objects, 1(8) handoff, 3(11016) steal, 21/2/0 yields",
+		"13,2,48,24,2,263,124,1891444,938285,6426929,5488644,1,8,3,11016,21,2,0",
+		GO_1_1_AND_1_2,
+	},
+	&TestData{ // 1.2
+		"gc63(2): 3+1+0 ms, 15 -> 7 MB 167805 -> 12894 (9983900-9971006) objects, 0(0) handoff, 4(350) steal, 16/2/0 yields",
+		"63,2,3,1,0,15,7,167805,12894,9983900,9971006,0,0,4,350,16,2,0",
+		GO_1_1_AND_1_2,
 	},
 }
 
@@ -80,6 +85,7 @@ func TestConvertGcLog(t *testing.T) {
 	testGcLogs := []string{
 		"testdata/testdata_go_1_0_3",
 		"testdata/testdata_go_1_1",
+		"testdata/testdata_go_1_2",
 	}
 
 	for _, item := range testGcLogs {
