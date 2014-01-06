@@ -51,13 +51,23 @@ func init() {
 }
 
 func detectLogVersion(line string) (version int, err error) {
-	for version, regexp := range regexes {
+	found := false
+
+	// Find the version from string and check all versions of log patterns
+	for ver, regexp := range regexes {
 		if regexp.MatchString(line) {
-			return version, nil
+			if found == true {
+				return Unknown, errors.New(fmt.Sprintf("ambiguous log version: %s", line))
+			}
+			found = true
+			version = ver
 		}
 	}
 
-	err = errVersionNotFound
+	if !found {
+		err = errVersionNotFound
+	}
+
 	return
 }
 
