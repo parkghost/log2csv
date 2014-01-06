@@ -7,4 +7,4 @@ go:
 notifications:
   hipchat:
     rooms:
-      secure: qbCaZZC9r0k/xCxSR3L9UqRD9oz9+cftWmItQ+IkadppR6Ga/8cW/3NUY//lMnaNOyE2mi2qt34IyweFU2qUA4QSs55meEh46dBbqwSVGUIsv1L5VQ8LvP6wxvWYbEh1J4J01fLpQ8uSDfqD0tRHmfHMqHVsgG7mRlFBjDg/r0o=
+      secure: F4aENVhJ7UXTc9a+lNaosYVp7/Os/ALyEJud4TuQyBTUgyqP2VUtmAm9tqLDnDwcDMOKowLIYRmkG1DZzDydyBHIItFwvPu2/s1wf/0eYm6Hin12A76fspWVdiM29B1C87D0R/zDzFEHla2MEtHNT2GPL2sEIbLMAODbtSKd7Mw=
