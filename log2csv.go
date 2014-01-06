@@ -86,42 +86,58 @@ func convert(input string, version int) (output string, err error) {
 	return
 }
 
-func process(reader io.Reader, writer io.Writer) {
-	bufReader := bufio.NewReader(reader)
+func process(reader io.Reader, writer io.Writer) (err error) {
+	scanner := bufio.NewScanner(reader)
 	bufWriter := bufio.NewWriter(writer)
 
+	defer func() {
+		if errWriterFlush := bufWriter.Flush(); errWriterFlush != nil {
+			err = errWriterFlush
+		}
+	}()
+
 	currentLogVersion := Unknown
-	for {
+	for scanner.Scan() {
 
 		filtered := false
-		if line, err := bufReader.ReadString('\n'); err != nil {
-			break
-		} else {
-			if currentLogVersion == Unknown {
-				if version, err := detectLogVersion(line); err == nil {
-					currentLogVersion = version
-					err := writeHeader(bufWriter, currentLogVersion)
-					checkError(err)
+		line := scanner.Text()
+
+		// detect the log version if the current log version is Unknown
+		if currentLogVersion == Unknown {
+			if version, errVersion := detectLogVersion(line); errVersion == nil {
+				currentLogVersion = version
+				err = writeHeader(bufWriter, currentLogVersion)
+				if err != nil {
+					return
 				}
-
-			}
-
-			if currentLogVersion != Unknown {
-				if output, err := convert(line, currentLogVersion); err == nil {
-					err := writeBody(bufWriter, output)
-					checkError(err)
-					filtered = true
-				}
-			}
-
-			if isStdin && filtered == false {
-				fmt.Print(line)
 			}
 		}
 
+		if currentLogVersion != Unknown {
+
+			// parse and convert string from raw string to csv structure
+			if output, errConvert := convert(line, currentLogVersion); errConvert == nil {
+				err = writeBody(bufWriter, output)
+				if err != nil {
+					return
+				}
+
+				filtered = true
+			}
+		}
+
+		if isStdin && filtered == false {
+			fmt.Println(line)
+		}
+
 	}
-	err := bufWriter.Flush()
-	checkError(err)
+
+	err = scanner.Err()
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func writeHeader(writer *bufio.Writer, version int) (err error) {
@@ -191,5 +207,6 @@ func main() {
 	checkError(err)
 	defer writer.(*os.File).Close()
 
-	process(reader, writer)
+	err = process(reader, writer)
+	checkError(err)
 }

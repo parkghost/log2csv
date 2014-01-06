@@ -96,12 +96,14 @@ func TestConvertGcLog(t *testing.T) {
 
 		out := &bytes.Buffer{}
 
-		process(in, out)
+		err = process(in, out)
+		if err != nil {
+			t.Fatalf("cannot process %s.csv: %s", item, err)
+		}
 
 		csvData, err := ioutil.ReadFile(item + ".csv")
-
 		if err != nil {
-			t.Fatalf("cannot read %s.csv", item)
+			t.Fatalf("cannot read %s.csv: %s", item, err)
 		}
 
 		actual := string(out.Bytes())
