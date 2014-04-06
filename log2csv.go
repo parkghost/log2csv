@@ -57,7 +57,7 @@ func detectLogVersion(line string) (version int, err error) {
 	for ver, regexp := range regexes {
 		if regexp.MatchString(line) {
 			if found == true {
-				return Unknown, errors.New(fmt.Sprintf("ambiguous log version: %s", line))
+				return Unknown, fmt.Errorf("ambiguous log version: %s", line)
 			}
 			found = true
 			version = ver
@@ -74,12 +74,12 @@ func detectLogVersion(line string) (version int, err error) {
 func convert(input string, version int) (output string, err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = errors.New(fmt.Sprintf("unmatched uint string: %s => %s", input, e))
+			err = fmt.Errorf("unmatched uint string: %s => %s", input, e)
 		}
 	}()
 
 	if matched := regexes[version].FindStringSubmatch(input); matched == nil {
-		err = errors.New(fmt.Sprintf("unmatched string: %s", input))
+		err = fmt.Errorf("unmatched string: %s", input)
 	} else {
 		output = strings.Join(matched[1:], ",")
 	}
