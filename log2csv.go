@@ -91,8 +91,10 @@ func process(reader io.Reader, writer io.Writer) (err error) {
 	bufWriter := bufio.NewWriter(writer)
 
 	defer func() {
-		if errWriterFlush := bufWriter.Flush(); errWriterFlush != nil {
-			err = errWriterFlush
+		if err == nil {
+			if errWriterFlush := bufWriter.Flush(); errWriterFlush != nil {
+				err = errWriterFlush
+			}
 		}
 	}()
 
