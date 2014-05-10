@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"errors"
 	"flag"
 	"fmt"
@@ -71,7 +72,7 @@ func detectLogVersion(line string) (version int, err error) {
 	return
 }
 
-func convert(input string, version int) (output string, err error) {
+func convert(input string, version int) (output []string, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = fmt.Errorf("unmatched uint string: %s => %s", input, e)
@@ -81,20 +82,20 @@ func convert(input string, version int) (output string, err error) {
 	if matched := regexes[version].FindStringSubmatch(input); matched == nil {
 		err = fmt.Errorf("unmatched string: %s", input)
 	} else {
-		output = strings.Join(matched[1:], ",")
+		output = matched[1:]
 	}
+
 	return
 }
 
 func process(reader io.Reader, writer io.Writer) (err error) {
 	scanner := bufio.NewScanner(reader)
-	bufWriter := bufio.NewWriter(writer)
+	csvWriter := csv.NewWriter(writer)
 
 	defer func() {
 		if err == nil {
-			if errWriterFlush := bufWriter.Flush(); errWriterFlush != nil {
-				err = errWriterFlush
-			}
+			csvWriter.Flush()
+			err = csvWriter.Error()
 		}
 	}()
 
@@ -108,7 +109,12 @@ func process(reader io.Reader, writer io.Writer) (err error) {
 		if currentLogVersion == Unknown {
 			if version, errVersion := detectLogVersion(line); errVersion == nil {
 				currentLogVersion = version
-				err = writeHeader(bufWriter, currentLogVersion)
+
+				header := header[currentLogVersion]
+				if isStdin && timestamp {
+					header = "unixtime," + header
+				}
+				err = csvWriter.Write(strings.Split(header, ","))
 				if err != nil {
 					return
 				}
@@ -118,8 +124,13 @@ func process(reader io.Reader, writer io.Writer) (err error) {
 		if currentLogVersion != Unknown {
 
 			// parse and convert string from raw string to csv structure
-			if output, errConvert := convert(line, currentLogVersion); errConvert == nil {
-				err = writeBody(bufWriter, output)
+			if record, errConvert := convert(line, currentLogVersion); errConvert == nil {
+
+				if isStdin && timestamp {
+					record = append([]string{fmtFrac(time.Now(), 6)}, record...)
+				}
+
+				err = csvWriter.Write(record)
 				if err != nil {
 					return
 				}
@@ -139,25 +150,6 @@ func process(reader io.Reader, writer io.Writer) (err error) {
 		return
 	}
 
-	return
-}
-
-func writeHeader(writer *bufio.Writer, version int) (err error) {
-	prefix := ""
-	if isStdin && timestamp {
-		prefix = "unixtime,"
-	}
-	_, err = writer.WriteString(prefix + header[version] + "\n")
-	return
-}
-
-func writeBody(writer *bufio.Writer, output string) (err error) {
-	prefix := ""
-	if isStdin && timestamp {
-		prefix = fmtFrac(time.Now(), 6) + ","
-	}
-
-	_, err = writer.WriteString(prefix + output + "\n")
 	return
 }
 

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -43,11 +45,13 @@ func TestDetectLogVersion(t *testing.T) {
 
 func TestConvert(t *testing.T) {
 	for _, data := range testDatas {
-		if output, err := convert(data.text, data.version); err != nil {
+		if record, err := convert(data.text, data.version); err != nil {
 			t.Fatal(err)
 		} else {
-			if output != data.expected {
-				t.Fatalf("expected %s, got %s", data.expected, output)
+
+			expected := strings.Split(data.expected, ",")
+			if !reflect.DeepEqual(expected, record) {
+				t.Fatalf("expected %s, got %s", expected, record)
 			}
 		}
 	}
