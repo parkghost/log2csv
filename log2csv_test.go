@@ -32,6 +32,11 @@ var testDatas = []*TestData{
 		"63,2,3,1,0,15,7,167805,12894,9983900,9971006,0,0,4,350,16,2,0",
 		GO_1_1_AND_1_2,
 	},
+	&TestData{ // 1.3
+		"gc1(1): 5+0+186+0 us, 0 -> 0 MB, 18 (19-1) objects, 0/0/0 sweeps, 0(0) handoff, 0(0) steal, 0/0/0 yields",
+		"1,1,5,0,186,0,0,0,18,19,1,0,0,0,0,0,0,0,0,0,0",
+		GO_1_3,
+	},
 }
 
 func TestDetectLogVersion(t *testing.T) {
@@ -89,6 +94,7 @@ func TestConvertGcLog(t *testing.T) {
 		"testdata/testdata_go_1_0_3",
 		"testdata/testdata_go_1_1",
 		"testdata/testdata_go_1_2",
+		"testdata/testdata_go_1_3",
 	}
 
 	for _, item := range testGcLogs {

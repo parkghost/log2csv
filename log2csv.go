@@ -17,19 +17,22 @@ const (
 	Unknown = iota
 	GO_1_0
 	GO_1_1_AND_1_2
+	GO_1_3
 )
 
 var (
 	regexes = map[int]*regexp.Regexp{
-		GO_1_0:         regexp.MustCompile(`gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects\s(\d+)\shandoff`),
-		GO_1_1_AND_1_2: regexp.MustCompile(`gc(\d+)\((\d+)\):\s(\d+)\+(\d+)\+(\d+)\s\w+,\s(\d+)\s->\s(\d+)\s\w+\s(\d+)\s->\s(\d+)\s\((\d+)-(\d+)\)\sobjects,\s(\d+)\((\d+)\)\shandoff,\s(\d+)\((\d+)\)\ssteal,\s(\d+)\/(\d+)\/(\d+)\syields`),
+		GO_1_0:         regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+) \w+ (\d+) -> (\d+) \w+ (\d+) -> (\d+) \((\d+)-(\d+)\) objects (\d+) handoff`),
+		GO_1_1_AND_1_2: regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+) \w+, (\d+) -> (\d+) \w+ (\d+) -> (\d+) \((\d+)-(\d+)\) objects, (\d+)\((\d+)\) handoff, (\d+)\((\d+)\) steal, (\d+)\/(\d+)\/(\d+) yields`),
+		GO_1_3:         regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+)\+(\d+) \w+, (\d+) -> (\d+) \w+, (\d+) \((\d+)-(\d+)\) objects, (\d+)\/(\d+)\/(\d+) sweeps, (\d+)\((\d+)\) handoff, (\d+)\((\d+)\) steal, (\d+)\/(\d+)\/(\d+) yields`),
 	}
 	header = map[int]string{
 		GO_1_0:         "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff",
 		GO_1_1_AND_1_2: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
+		GO_1_3:         "numgc,nproc,stop-the-world,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
 	}
 
-	errVersionNotFound = errors.New("can't detected version")
+	errVersionNotFound = errors.New("cannot detected version")
 )
 
 func newReader(file string) (reader io.Reader, err error) {
