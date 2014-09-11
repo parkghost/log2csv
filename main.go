@@ -36,11 +36,11 @@ func main() {
 
 	reader, err := newReader(inputFile)
 	checkError(err)
-	defer reader.(*os.File).Close()
+	defer reader.Close()
 
 	writer, err := newWriter(outputFile)
 	checkError(err)
-	defer writer.(*os.File).Close()
+	defer writer.Close()
 
 	err = process(reader, writer)
 	checkError(err)

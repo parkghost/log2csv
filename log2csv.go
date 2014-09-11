@@ -35,7 +35,7 @@ var (
 	errVersionNotFound = errors.New("cannot detected version")
 )
 
-func newReader(file string) (reader io.Reader, err error) {
+func newReader(file string) (reader io.ReadCloser, err error) {
 	if isTTY {
 		reader = os.Stdin
 	} else {
@@ -45,7 +45,7 @@ func newReader(file string) (reader io.Reader, err error) {
 	return
 }
 
-func newWriter(file string) (writer io.Writer, err error) {
+func newWriter(file string) (writer io.WriteCloser, err error) {
 	if file == "" {
 		err = errors.New("required output file parameter")
 	} else {
