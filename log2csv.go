@@ -18,6 +18,7 @@ const (
 	GO_1_0
 	GO_1_1_AND_1_2
 	GO_1_3
+	GO_1_4
 )
 
 var (
@@ -25,11 +26,13 @@ var (
 		GO_1_0:         regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+) \w+ (\d+) -> (\d+) \w+ (\d+) -> (\d+) \((\d+)-(\d+)\) objects (\d+) handoff`),
 		GO_1_1_AND_1_2: regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+) \w+, (\d+) -> (\d+) \w+ (\d+) -> (\d+) \((\d+)-(\d+)\) objects, (\d+)\((\d+)\) handoff, (\d+)\((\d+)\) steal, (\d+)\/(\d+)\/(\d+) yields`),
 		GO_1_3:         regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+)\+(\d+) \w+, (\d+) -> (\d+) \w+, (\d+) \((\d+)-(\d+)\) objects, (\d+)\/(\d+)\/(\d+) sweeps, (\d+)\((\d+)\) handoff, (\d+)\((\d+)\) steal, (\d+)\/(\d+)\/(\d+) yields`),
+		GO_1_4:         regexp.MustCompile(`gc(\d+)\((\d+)\): (\d+)\+(\d+)\+(\d+)\+(\d+) \w+, (\d+) -> (\d+) \w+, (\d+) \((\d+)-(\d+)\) objects, (\d+) goroutines, (\d+)\/(\d+)\/(\d+) sweeps, (\d+)\((\d+)\) handoff, (\d+)\((\d+)\) steal, (\d+)\/(\d+)\/(\d+) yields`),
 	}
 	header = map[int]string{
 		GO_1_0:         "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff",
 		GO_1_1_AND_1_2: "numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
-		GO_1_3:         "numgc,nproc,stop-the-world,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
+		GO_1_3:         "numgc,nproc,pause,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
+		GO_1_4:         "numgc,nproc,pause,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,goroutines,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep",
 	}
 
 	errVersionNotFound = errors.New("cannot detected version")
