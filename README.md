@@ -20,7 +20,7 @@ Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv
 #### Output
 
 ```csv
-numgc,nproc,stop-the-world,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep
+numgc,nproc,pause,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep
 1,1,5,0,186,0,0,0,18,19,1,0,0,0,0,0,0,0,0,0,0
 2,1,4,1,316,1,0,0,208,209,1,12,0,0,0,0,0,0,0,0,0
 3,1,1,0,360,1,0,0,565,616,51,33,0,0,0,0,0,0,0,0,0
