@@ -115,6 +115,10 @@ func process(reader io.Reader, writer io.Writer) (err error) {
 
 	}
 
+	if isTTY {
+		csvWriter.Flush()
+	}
+
 	err = scanner.Err()
 	if err != nil {
 		return
