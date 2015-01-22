@@ -18,7 +18,7 @@ Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv
 
 ### Installation
 ```
-go get github.com/parkghost/log2csv
+go get github.com/parkghost/log2csv/cmd/log2csv
 ```
 
 ### Example
