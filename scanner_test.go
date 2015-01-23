@@ -1,6 +1,7 @@
 package log2csv
 
 import (
+	"bufio"
 	"strings"
 	"testing"
 )
@@ -36,23 +37,38 @@ func TestScanner(t *testing.T) {
 			"gc1(1): 4+0+1097+3 us, 0 -> 0 MB, 21 (21-0) objects, 2 goroutines, 15/0/0 sweeps, 0(0) handoff, 0(0) steal, 0/0/0 yields",
 			"1,1,4,0,1097,3,0,0,21,21,0,2,15,0,0,0,0,0,0,0,0,0",
 		},
+		{
+			"Go 1.4", // add non-gctrace data
+			`gc1(1): 3+0+125+1 us, 0 -> 0 MB, 21 (21-0) objects, 2 goroutines, 15/0/0 sweeps, 0(0) handoff, 0(0) steal, 0/0/0 yields
+somthing else ...
+gc2(1): 0+0+99+0 us, 0 -> 0 MB, 48 (49-1) objects, 3 goroutines, 19/0/0 sweeps, 0(0) handoff, 0(0) steal, 0/0/0 yields`,
+			`1,1,3,0,125,1,0,0,21,21,0,2,15,0,0,0,0,0,0,0,0,0
+2,1,0,0,99,0,0,0,48,49,1,3,19,0,0,0,0,0,0,0,0,0`,
+		},
 	}
 
 	for _, item := range testdata {
 		s := NewScanner(strings.NewReader(item.text), formats)
+		br := bufio.NewReader(strings.NewReader(item.expected))
+		for {
+			log := s.Scan()
+			if log == nil {
+				if s.Err() != nil {
+					t.Fail()
+				}
+				break
+			}
 
-		log := s.Scan()
-		if s.Err() != nil {
-			t.Fail()
-		}
+			if item.formatName != log.Format.Name {
+				t.Fatalf("expected %s, got %s", item.formatName, log.Format.Name)
+			}
 
-		if item.formatName != log.Format.Name {
-			t.Fatalf("expected %s, got %s", item.formatName, log.Format.Name)
-		}
-
-		actual := strings.Join(log.Fields, ",")
-		if item.expected != actual {
-			t.Fatalf("expected %s, got %s", item.expected, actual)
+			expected, _ := br.ReadString('\n')
+			expected = strings.TrimSpace(expected)
+			actual := strings.Join(log.Fields, ",")
+			if expected != actual {
+				t.Fatalf("expected %s, got %s", expected, actual)
+			}
 		}
 	}
 }
