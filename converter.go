@@ -54,11 +54,12 @@ func (c *Converter) writeHeader(log *Log) error {
 }
 
 func (c *Converter) writeLog(log *Log) error {
+	fields := log.Fields
 	if c.timestamp {
-		log.Fields = append([]string{fmtFrac(log.Timestamp, 6)}, log.Fields...)
+		fields = append([]string{fmtFrac(log.Timestamp, 6)}, fields...)
 	}
 
-	return c.cw.Write(log.Fields)
+	return c.cw.Write(fields)
 }
 
 func fmtFrac(t time.Time, prec int) string {
