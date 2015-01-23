@@ -29,7 +29,7 @@ $ GODEBUG=gctrace=1 godoc -http=:6060  2>&1 | log2csv -t -o gc.csv
 ###### Output
 ```
 $ head gc.csv
-unixtime,numgc,nproc,stw,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,goroutines,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep
+unixtime,numgc,nproc,seq,sweep,mark,wait,heap0,heap1,obj,nmalloc,nfree,goroutines,nspan,nbgsweep,npausesweep,nhandoff,nhandoffcnt,nsteal,nstealcnt,nprocyield,nosyield,nsleep
 1421931830.043593,1,1,4,0,123,0,0,0,21,21,0,2,16,0,0,0,0,0,0,0,0,0
 1421931830.043797,2,1,0,0,101,0,0,0,40,41,1,3,20,0,0,0,0,0,0,0,0,0
 1421931830.043930,3,1,1,0,121,0,0,0,128,144,16,4,30,0,0,0,0,0,0,0,0,0
