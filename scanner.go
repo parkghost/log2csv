@@ -20,11 +20,11 @@ func (s *Scanner) Scan() *Log {
 		now := time.Now()
 		line := sc.Text()
 
-		if f := s.match(line); f != nil {
+		if format, fields := s.match(line); format != nil {
 			log := new(Log)
 			log.Timestamp = now
-			log.Format = f
-			log.Fields = f.Pattern.FindStringSubmatch(line)[1:]
+			log.Format = format
+			log.Fields = fields
 			return log
 		}
 	}
@@ -36,19 +36,21 @@ func (s *Scanner) Scan() *Log {
 	return nil
 }
 
-func (s *Scanner) match(line string) *Format {
-	if s.lastMatched != nil && s.lastMatched.Pattern.MatchString(line) {
-		return s.lastMatched
-	}
-
-	for _, f := range s.formats {
-		if f.Pattern.MatchString(line) {
-			s.lastMatched = f
-			return f
+func (s *Scanner) match(line string) (*Format, []string) {
+	if s.lastMatched != nil {
+		if fields := s.lastMatched.Pattern.FindStringSubmatch(line); fields != nil {
+			return s.lastMatched, fields[1:]
 		}
 	}
 
-	return nil
+	for _, f := range s.formats {
+		if fields := f.Pattern.FindStringSubmatch(line); fields != nil {
+			s.lastMatched = f
+			return f, fields[1:]
+		}
+	}
+
+	return nil, nil
 }
 
 func (s *Scanner) Err() error {
