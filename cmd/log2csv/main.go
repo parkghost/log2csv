@@ -41,8 +41,10 @@ func main() {
 	checkError(err)
 	defer w.Close()
 
-	converter := log2csv.NewConverter(r, w, *timestamp && isTTY())
+	cw := log2csv.NewCSVWriter(w, *timestamp && isTTY(), !isTTY())
+	converter := log2csv.NewConverter(r, cw)
 	checkError(converter.Run())
+
 }
 
 func newReader(file string) (io.ReadCloser, error) {
