@@ -7,7 +7,7 @@ type Converter struct {
 	w Writer
 }
 
-func (c *Converter) Run() error {
+func (c *Converter) Convert() error {
 	sc := NewScanner(c.r, formats)
 
 	for {

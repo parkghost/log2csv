@@ -43,7 +43,7 @@ func main() {
 
 	cw := log2csv.NewCSVWriter(w, *timestamp && isTTY(), !isTTY())
 	converter := log2csv.NewConverter(r, cw)
-	checkError(converter.Run())
+	checkError(converter.Convert())
 
 }
 

@@ -26,7 +26,7 @@ func TestConverter(t *testing.T) {
 		cw := NewCSVWriter(out, false, true)
 
 		c := NewConverter(in, cw)
-		err = c.Run()
+		err = c.Convert()
 		if err != nil {
 			t.Fatalf("convert %s.log to csv format failed: %s", item, err)
 		}
