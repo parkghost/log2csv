@@ -23,7 +23,7 @@ go get github.com/parkghost/log2csv/cmd/log2csv
 
 ### Example
 ```
-$ GODEBUG=gctrace=1 godoc -http=:6060  2>&1 | log2csv -t -o gc.csv
+$ GODEBUG=gctrace=1 godoc -http=:6060  2>&1 | log2csv -o gc.csv
 ```
 
 ###### Output
