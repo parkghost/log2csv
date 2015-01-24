@@ -17,7 +17,7 @@ type Flusher interface {
 	Flush() error
 }
 
-type csvWriter struct {
+type CSVWriter struct {
 	w         *csv.Writer
 	timestamp bool
 	bufferred bool
@@ -25,7 +25,7 @@ type csvWriter struct {
 	wroteHeader bool
 }
 
-func (cw *csvWriter) Write(log *Log) error {
+func (cw *CSVWriter) Write(log *Log) error {
 	if !cw.wroteHeader {
 		if err := cw.writeHeader(log); err != nil {
 			return err
@@ -43,7 +43,7 @@ func (cw *csvWriter) Write(log *Log) error {
 	return cw.w.Error()
 }
 
-func (cw *csvWriter) writeHeader(log *Log) error {
+func (cw *CSVWriter) writeHeader(log *Log) error {
 	header := log.Format.Header
 	if cw.timestamp {
 		header = "unixtime," + header
@@ -52,7 +52,7 @@ func (cw *csvWriter) writeHeader(log *Log) error {
 	return cw.w.Write(strings.Split(header, ","))
 }
 
-func (cw *csvWriter) writeLog(log *Log) error {
+func (cw *CSVWriter) writeLog(log *Log) error {
 	fields := log.Fields
 	if cw.timestamp {
 		fields = append([]string{fmtFrac(log.Timestamp, 6)}, fields...)
@@ -61,7 +61,7 @@ func (cw *csvWriter) writeLog(log *Log) error {
 	return cw.w.Write(fields)
 }
 
-func (cw *csvWriter) Flush() error {
+func (cw *CSVWriter) Flush() error {
 	cw.w.Flush()
 
 	return cw.w.Error()
@@ -74,8 +74,8 @@ func fmtFrac(t time.Time, prec int) string {
 	return fmt.Sprintf(fmtStr, float64(unixNano)/10e8)
 }
 
-func NewCSVWriter(w io.Writer, timestamp bool, bufferred bool) *csvWriter {
-	cw := new(csvWriter)
+func NewCSVWriter(w io.Writer, timestamp bool, bufferred bool) *CSVWriter {
+	cw := new(CSVWriter)
 	cw.w = csv.NewWriter(w)
 	cw.timestamp = timestamp
 	cw.bufferred = bufferred
