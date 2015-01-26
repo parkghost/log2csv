@@ -42,7 +42,8 @@ func main() {
 	defer w.Close()
 
 	cw := log2csv.NewCSVWriter(w, *timestamp && isTTY(), !isTTY())
-	converter := log2csv.NewConverter(r, cw)
+	sc := log2csv.NewScanner(r, log2csv.GCTraceFormats)
+	converter := log2csv.NewConverter(sc, cw)
 	checkError(converter.Convert())
 
 }

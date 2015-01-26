@@ -26,7 +26,8 @@ func TestConverter(t *testing.T) {
 		w := new(bytes.Buffer)
 		cw := NewCSVWriter(w, false, true)
 
-		c := NewConverter(in, cw)
+		sc := NewScanner(in, GCTraceFormats)
+		c := NewConverter(sc, cw)
 		err = c.Convert()
 		if err != nil {
 			t.Fatalf("convert %s.log failed: %s", item, err)
@@ -53,13 +54,17 @@ func (e *errorWriter) Write(log *Log) error {
 
 func TestConvertError(t *testing.T) {
 	cw := NewCSVWriter(ioutil.Discard, false, false)
-	c := NewConverter(&errorReader{}, cw)
+	sc := NewScanner(&errorReader{}, GCTraceFormats)
+	c := NewConverter(sc, cw)
+
 	if err := c.Convert(); err != errReadTest {
 		t.Fatalf("expected errReadTest, got %v", err)
 	}
 
 	testdata := "gc14(2): 1+1+0 ms 10 -> 5 MB 58439 -> 8912 (573381-564469) objects 184 handoff"
-	c = NewConverter(strings.NewReader(testdata), &errorWriter{})
+
+	sc = NewScanner(strings.NewReader(testdata), GCTraceFormats)
+	c = NewConverter(sc, &errorWriter{})
 	if err := c.Convert(); err != errWriteTest {
 		t.Fatalf("expected errWriteTest, got %v", err)
 	}
@@ -78,7 +83,8 @@ gc5(2): 120+4+2438+5 us, 0 -> 0 MB, 541 (677-136) objects, 8 goroutines, 50/0/0 
 	cw := NewCSVWriter(ioutil.Discard, false, true)
 
 	for i := 0; i < b.N; i++ {
-		c := NewConverter(r, cw)
+		sc := NewScanner(r, GCTraceFormats)
+		c := NewConverter(sc, cw)
 		if err := c.Convert(); err != nil {
 			b.Fatalf("convert log to csv failed: %s", err)
 		}

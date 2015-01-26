@@ -1,17 +1,13 @@
 package log2csv
 
-import "io"
-
 type Converter struct {
-	r io.Reader
-	w Writer
+	sc *Scanner
+	w  Writer
 }
 
 func (c *Converter) Convert() error {
-	sc := NewScanner(c.r, formats)
-
 	for {
-		log := sc.Scan()
+		log := c.sc.Scan()
 		if log == nil {
 			break
 		}
@@ -21,8 +17,8 @@ func (c *Converter) Convert() error {
 		}
 	}
 
-	if sc.Err() != nil {
-		return sc.Err()
+	if c.sc.Err() != nil {
+		return c.sc.Err()
 	}
 	if f, ok := c.w.(Flusher); ok {
 		return f.Flush()
@@ -30,9 +26,9 @@ func (c *Converter) Convert() error {
 	return nil
 }
 
-func NewConverter(r io.Reader, w Writer) *Converter {
+func NewConverter(sc *Scanner, w Writer) *Converter {
 	c := new(Converter)
-	c.r = r
+	c.sc = sc
 	c.w = w
 
 	return c

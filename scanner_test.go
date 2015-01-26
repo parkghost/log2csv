@@ -48,7 +48,7 @@ gc2(1): 0+0+99+0 us, 0 -> 0 MB, 48 (49-1) objects, 3 goroutines, 19/0/0 sweeps, 
 	}
 
 	for _, item := range testdata {
-		sc := NewScanner(strings.NewReader(item.text), formats)
+		sc := NewScanner(strings.NewReader(item.text), GCTraceFormats)
 
 		var logs []*Log
 		for {
@@ -88,7 +88,7 @@ func (e errorReader) Read(p []byte) (int, error) {
 }
 
 func TestScanError(t *testing.T) {
-	sc := NewScanner(&errorReader{}, formats)
+	sc := NewScanner(&errorReader{}, GCTraceFormats)
 	if log := sc.Scan(); log != nil {
 		t.Fatal("expected nil from Scan")
 	}

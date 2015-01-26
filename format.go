@@ -17,7 +17,7 @@ type Format struct {
 	Pattern *regexp.Regexp
 }
 
-var formats = []*Format{
+var GCTraceFormats = []*Format{
 	{
 		"Go 1.0",
 		"numgc,nproc,mark,sweep,cleanup,heap0,heap1,obj0,obj1,nmalloc,nfree,nhandoff",
