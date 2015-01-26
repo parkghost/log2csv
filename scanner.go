@@ -15,25 +15,29 @@ type Scanner struct {
 }
 
 func (s *Scanner) Scan() *Log {
-	sc := s.sc
-	for sc.Scan() {
+	if s.err != nil {
+		return nil
+	}
+
+	var log *Log
+	for s.sc.Scan() {
 		now := time.Now()
-		line := sc.Text()
+		line := s.sc.Text()
 
 		if format, fields := s.match(line); format != nil {
-			log := new(Log)
+			log = new(Log)
 			log.Timestamp = now
 			log.Format = format
 			log.Fields = fields
-			return log
+			break
 		}
+		// invalid data
+	}
+	if s.sc.Err() != nil {
+		s.err = s.sc.Err()
 	}
 
-	if sc.Err() != nil {
-		s.err = sc.Err()
-	}
-
-	return nil
+	return log
 }
 
 func (s *Scanner) match(line string) (*Format, []string) {

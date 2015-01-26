@@ -54,13 +54,13 @@ gc2(1): 0+0+99+0 us, 0 -> 0 MB, 48 (49-1) objects, 3 goroutines, 19/0/0 sweeps, 
 		for {
 			log := sc.Scan()
 			if log == nil {
+				if sc.Err() != nil {
+					t.Fatal("unexpected error after Scan:", sc.Err())
+				}
 				break
 			}
 
 			logs = append(logs, log)
-		}
-		if sc.Err() != nil {
-			t.Fatal("unexpected error after Scan:", sc.Err())
 		}
 
 		lines := strings.Split(item.expected, "\n")
