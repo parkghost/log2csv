@@ -5,8 +5,11 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestConverter(t *testing.T) {
@@ -21,7 +24,7 @@ func TestConverter(t *testing.T) {
 	for _, item := range testdata {
 		in, err := os.Open(item + ".log")
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal("unexpected error:", err)
 		}
 		w := new(bytes.Buffer)
 		cw := NewCSVWriter(w, false, true)
@@ -44,6 +47,64 @@ func TestConverter(t *testing.T) {
 	}
 }
 
+var textFormat = &Format{
+	"test format",
+	"column1",
+	regexp.MustCompile(`(\w+)`),
+}
+
+func TestConvertScanLoop(t *testing.T) {
+	var testdata = struct {
+		data     string
+		format   *Format
+		expected string
+	}{
+		"testdata",
+		textFormat,
+		"testdata",
+	}
+
+	sc := NewScanner(strings.NewReader(testdata.data), []*Format{testdata.format})
+	c := NewConverter(sc, nil)
+
+	go c.scanLoop()
+
+	select {
+	case log := <-c.logCh:
+		if log == nil || log.Format != testdata.format || !reflect.DeepEqual(log.Fields, []string{testdata.expected}) {
+			t.Fatal("incorrect log:", log)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout, waiting for log")
+	}
+
+	select {
+	case <-c.logCh:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout, waiting for c.logCh to close")
+	}
+}
+
+func TestConvertScanLoopError(t *testing.T) {
+	sc := NewScanner(&errorReader{}, nil)
+	c := NewConverter(sc, nil)
+
+	go c.scanLoop()
+
+	select {
+	case err := <-c.errCh:
+		if err != errReadTest {
+			t.Fatalf("expected errReadTest, got %v", err)
+		}
+	}
+
+	select {
+	case <-c.logCh:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout, waiting for c.logCh to close")
+	}
+}
+
 var errWriteTest = errors.New("Write Test")
 
 type errorWriter struct{}
@@ -52,17 +113,76 @@ func (e *errorWriter) Write(log *Log) error {
 	return errWriteTest
 }
 
+func TestConvertWriteLoop(t *testing.T) {
+	var testdata = struct {
+		data     string
+		format   *Format
+		expected string
+	}{
+		"testdata",
+		textFormat,
+		textFormat.Header + "\ntestdata\n",
+	}
+
+	w := new(bytes.Buffer)
+	cw := NewCSVWriter(w, false, false)
+	c := NewConverter(nil, cw)
+
+	go c.writeLoop()
+
+	c.logCh <- &Log{time.Now(), testdata.format, []string{testdata.data}}
+	close(c.logCh)
+
+	select {
+	case <-c.quit:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout, waiting for c.quit to close")
+	}
+
+	if testdata.expected != string(w.Bytes()) {
+		t.Fatalf("expected %s, got %s", testdata.expected, w.Bytes())
+	}
+}
+
+func TestConvertWriteLoopError(t *testing.T) {
+	c := NewConverter(nil, &errorWriter{})
+
+	go c.writeLoop()
+	c.logCh <- &Log{time.Now(), nil, []string{""}}
+
+	select {
+	case err := <-c.errCh:
+		if err != errWriteTest {
+			t.Fatalf("expected errWriteTest, got %v", err)
+		}
+	}
+
+	select {
+	case <-c.quit:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout, waiting for c.quit to close")
+	}
+
+	// check scanLoop has stopped when scanLoop gets error
+	go c.scanLoop()
+	select {
+	case <-c.logCh:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout, waiting for c.logCh to close")
+	}
+}
+
 func TestConvertError(t *testing.T) {
+	// check read error
 	cw := NewCSVWriter(ioutil.Discard, false, false)
 	sc := NewScanner(&errorReader{}, GCTraceFormats)
 	c := NewConverter(sc, cw)
-
 	if err := c.Convert(); err != errReadTest {
 		t.Fatalf("expected errReadTest, got %v", err)
 	}
 
+	// check write erro
 	testdata := "gc14(2): 1+1+0 ms 10 -> 5 MB 58439 -> 8912 (573381-564469) objects 184 handoff"
-
 	sc = NewScanner(strings.NewReader(testdata), GCTraceFormats)
 	c = NewConverter(sc, &errorWriter{})
 	if err := c.Convert(); err != errWriteTest {
