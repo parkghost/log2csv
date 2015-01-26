@@ -1,7 +1,7 @@
 package log2csv
 
 import (
-	"bufio"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -48,27 +48,52 @@ gc2(1): 0+0+99+0 us, 0 -> 0 MB, 48 (49-1) objects, 3 goroutines, 19/0/0 sweeps, 
 	}
 
 	for _, item := range testdata {
-		s := NewScanner(strings.NewReader(item.text), formats)
-		br := bufio.NewReader(strings.NewReader(item.expected))
+		sc := NewScanner(strings.NewReader(item.text), formats)
+
+		var logs []*Log
 		for {
-			log := s.Scan()
+			log := sc.Scan()
 			if log == nil {
-				if s.Err() != nil {
-					t.Fail()
-				}
 				break
 			}
 
+			logs = append(logs, log)
+		}
+		if sc.Err() != nil {
+			t.Fatal("unexpected error after Scan:", sc.Err())
+		}
+
+		lines := strings.Split(item.expected, "\n")
+		for _, log := range logs {
 			if item.formatName != log.Format.Name {
-				t.Fatalf("expected %s, got %s", item.formatName, log.Format.Name)
+				t.Errorf("expected %s, got %s", item.formatName, log.Format.Name)
 			}
 
-			expected, _ := br.ReadString('\n')
-			expected = strings.TrimSpace(expected)
+			expected := lines[0]
+			lines = lines[1:]
 			actual := strings.Join(log.Fields, ",")
 			if expected != actual {
-				t.Fatalf("expected %s, got %s", expected, actual)
+				t.Errorf("scan %s format, expected\n%s, got\n%s", item.formatName, expected, actual)
 			}
 		}
+	}
+}
+
+var errReadTest = errors.New("Read Test")
+
+type errorReader struct{}
+
+func (e errorReader) Read(p []byte) (int, error) {
+	return 0, errReadTest
+}
+
+func TestScanError(t *testing.T) {
+	sc := NewScanner(&errorReader{}, formats)
+	if log := sc.Scan(); log != nil {
+		t.Fatal("expected nil from Scan")
+	}
+
+	if sc.Err() != errReadTest {
+		t.Fatalf("expected errReadTest, got %v", sc.Err())
 	}
 }

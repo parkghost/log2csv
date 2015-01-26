@@ -6,42 +6,43 @@ import (
 	"time"
 )
 
-func TestWriter(t *testing.T) {
-	log := Log{
+func TestCSVWriter(t *testing.T) {
+	example := &Log{
 		time.Unix(1366274236, 919928546),
 		&Format{Header: "c1,c2,c3"},
 		[]string{"1", "2", "3"},
 	}
 
-	testdata := []struct {
+	var testdata = []struct {
 		log       *Log
 		timestamp bool
 		expected  string
 	}{
 		{
-			&log,
+			example,
 			false,
 			"c1,c2,c3\n1,2,3\n",
 		},
+		// enable timestamp
 		{
-			&log,
+			example,
 			true,
 			"unixtime,c1,c2,c3\n1366274236.919929,1,2,3\n",
 		},
 	}
 
-	out := new(bytes.Buffer)
 	for _, item := range testdata {
-		cw := NewCSVWriter(out, item.timestamp, false)
+		w := new(bytes.Buffer)
+		cw := NewCSVWriter(w, item.timestamp, false)
 		if err := cw.Write(item.log); err != nil {
-			t.Fatal(err)
+			t.Error("unexpected error on Write:", err)
+			continue
 		}
 
-		actual := string(out.Bytes())
+		actual := string(w.Bytes())
 		if item.expected != actual {
-			t.Fatalf("expected %x, got %x", item.expected, actual)
+			t.Fatalf("expected %s, got %s", item.expected, actual)
 		}
-		out.Reset()
 	}
 }
 
@@ -64,8 +65,9 @@ func TestFmtFrac(t *testing.T) {
 	}
 
 	for _, item := range testData {
-		if result := fmtFrac(item.time, item.prec); item.expected != result {
-			t.Fatalf("expected %s, got %s", item.expected, result)
+		actual := fmtFrac(item.time, item.prec)
+		if item.expected != actual {
+			t.Fatalf("fmtFrac(%s, %d) => %s, want %s", item.time, item.prec, actual, item.expected)
 		}
 	}
 }
