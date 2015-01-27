@@ -163,7 +163,7 @@ func TestConvertWriteLoopError(t *testing.T) {
 		t.Fatal("timeout, waiting for c.quit to close")
 	}
 
-	// check scanLoop has stopped when scanLoop gets error
+	// check scanLoop has stopped when writeLoop gets error
 	go c.scanLoop()
 	select {
 	case <-c.logCh:

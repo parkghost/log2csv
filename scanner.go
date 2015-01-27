@@ -31,7 +31,6 @@ func (s *Scanner) Scan() *Log {
 			log.Fields = fields
 			break
 		}
-		// invalid data
 	}
 	if s.sc.Err() != nil {
 		s.err = s.sc.Err()
