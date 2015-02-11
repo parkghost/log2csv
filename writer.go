@@ -20,7 +20,7 @@ type Flusher interface {
 type CSVWriter struct {
 	w         *csv.Writer
 	timestamp bool
-	bufferred bool
+	buffering bool
 
 	wroteHeader bool
 }
@@ -36,7 +36,7 @@ func (cw *CSVWriter) Write(log *Log) error {
 	if err := cw.writeLog(log); err != nil {
 		return err
 	}
-	if !cw.bufferred {
+	if !cw.buffering {
 		cw.w.Flush()
 	}
 
@@ -74,11 +74,11 @@ func fmtFrac(t time.Time, prec int) string {
 	return fmt.Sprintf(fmtStr, float64(unixNano)/10e8)
 }
 
-func NewCSVWriter(w io.Writer, timestamp bool, bufferred bool) *CSVWriter {
+func NewCSVWriter(w io.Writer, timestamp bool, buffering bool) *CSVWriter {
 	cw := new(CSVWriter)
 	cw.w = csv.NewWriter(w)
 	cw.timestamp = timestamp
-	cw.bufferred = bufferred
+	cw.buffering = buffering
 
 	return cw
 }
