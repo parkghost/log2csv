@@ -1,10 +1,8 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 
@@ -12,12 +10,14 @@ import (
 )
 
 var (
-	inputFile  = flag.String("i", "", "The input file (default: standard input)")
-	outputFile = flag.String("o", "", "The output file")
-	timestamp  = flag.Bool("t", true, "Add timestamp at line head (the input file must be standard input)")
+	input, output string
+	timestamp     bool
 )
 
 func init() {
+	flag.StringVar(&input, "i", "stdin", "The input file")
+	flag.StringVar(&output, "o", "stdout", "The output file")
+	flag.BoolVar(&timestamp, "t", true, "Add timestamp at line head (the input file must be `stdin`)")
 	flag.Usage = func() {
 		fmt.Println("Usage1: log2csv -i gc.log -o gc.csv")
 		fmt.Println("Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv")
@@ -28,44 +28,41 @@ func init() {
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
-	if flag.NArg() != 0 || flag.NFlag() == 0 {
+	if flag.NArg() != 0 {
 		flag.Usage()
 		os.Exit(-1)
 	}
 
-	r, err := newReader(*inputFile)
+	r, err := file(input, false)
 	checkError(err)
 	defer r.Close()
 
-	w, err := newWriter(*outputFile)
+	w, err := file(output, true)
 	checkError(err)
 	defer w.Close()
 
-	cw := log2csv.NewCSVWriter(w, *timestamp && isTTY(), !isTTY())
+	timestamp = timestamp && input == "stdin"
+	buffering := input != "stdin"
+	cw := log2csv.NewCSVWriter(w, timestamp, buffering)
 	sc := log2csv.NewScanner(r, log2csv.GCTraceFormats)
 	converter := log2csv.NewConverter(sc, cw)
-	checkError(converter.Convert())
 
+	err = converter.Convert()
+	checkError(err)
 }
 
-func newReader(file string) (io.ReadCloser, error) {
-	if isTTY() {
+func file(name string, create bool) (*os.File, error) {
+	switch name {
+	case "stdin":
 		return os.Stdin, nil
+	case "stdout":
+		return os.Stdout, nil
+	default:
+		if create {
+			return os.Create(name)
+		}
+		return os.Open(name)
 	}
-
-	return os.Open(file)
-}
-
-func newWriter(file string) (io.WriteCloser, error) {
-	if file == "" {
-		return nil, errors.New("required output file parameter")
-	}
-
-	return os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-}
-
-func isTTY() bool {
-	return *inputFile == ""
 }
 
 func checkError(err error) {
