@@ -11,9 +11,9 @@ log2csv
 ```
 Usage1: log2csv -i gc.log -o gc.csv
 Usage2: GODEBUG=gctrace=1 your-go-program 2>&1 | log2csv -o gc.csv
-  -i="": The input file (default: standard input)
-  -o="": The output file
-  -t=true: Add timestamp at line head (the input file must be standard input)
+  -i="stdin": The input file
+  -o="stdout": The output file
+  -t=true: Add timestamp at line head (the input file must be `stdin`)
 ```
 
 ### Installation
